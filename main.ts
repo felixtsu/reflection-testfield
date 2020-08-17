@@ -9,6 +9,7 @@ namespace SpriteKind {
     export const Receiver = SpriteKind.create()
     export const Reflector = SpriteKind.create()
     export const ReflectorNWtoSE = SpriteKind.create()
+    export const CursorBox = SpriteKind.create()
 }
 controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
     cursorSprite.y += -16
@@ -41,8 +42,10 @@ sprites.onOverlap(SpriteKind.ReflectorNWtoSE, SpriteKind.Projectile, function (s
     otherSprite.setFlag(SpriteFlag.Ghost, false)
 })
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    reflectorSprite = sprites.create(cursorSprite.image, cursorSprite.kind())
-    reflectorSprite.setPosition(cursorSprite.x, cursorSprite.y)
+    if (!(cursorSprite.tileKindAt(TileDirection.Center, myTiles.tile3))) {
+        reflectorSprite = sprites.create(cursorSprite.image, cursorSprite.kind())
+        reflectorSprite.setPosition(cursorSprite.x, cursorSprite.y)
+    }
 })
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     cursorSprite.x += 16
@@ -117,6 +120,26 @@ function prepareCursor () {
         `, SpriteKind.Reflector)
     tiles.placeOnTile(cursorSprite, tiles.getTileLocation(0, 0))
     cursorSprite.setFlag(SpriteFlag.Ghost, true)
+    cursorBoxSprite = sprites.create(img`
+        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 . . . . . . . . . . . . . . 2 
+        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
+        `, SpriteKind.CursorBox)
+    cursorBoxSprite.setFlag(SpriteFlag.Ghost, true)
+    cursorBoxSprite.z = 100
 }
 controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
     cursorSprite.x += -16
@@ -125,18 +148,19 @@ let projectile: Sprite = null
 let emitters: Sprite[] = []
 let energybars: StatusBarSprite[] = []
 let allFull = false
+let cursorBoxSprite: Sprite = null
 let reflectorSprite: Sprite = null
 let cursorSprite: Sprite = null
-tiles.setTilemap(tiles.createTilemap(hex`0a0008000201020102010201020101020102010201020102020102010201020102010102010201020102010202010201020102010201010201020102010201020201020102010201020101020102010201020102`, img`
+tiles.setTilemap(tiles.createTilemap(hex`0a0008000301030103010301030101030103010301030103030103010301030103010103010301030103010303010202020202020301010301030103010301030301030103010301030101030103010301030103`, img`
     . . . . . . . . . . 
     . . . . . . . . . . 
     . . . . . . . . . . 
     . . . . . . . . . . 
+    . . 2 2 2 2 2 2 . . 
     . . . . . . . . . . 
     . . . . . . . . . . 
     . . . . . . . . . . 
-    . . . . . . . . . . 
-    `, [myTiles.transparency16,myTiles.tile1,myTiles.tile2], TileScale.Sixteen))
+    `, [myTiles.transparency16,myTiles.tile1,myTiles.tile3,myTiles.tile4], TileScale.Sixteen))
 let emitterSprite = sprites.create(img`
     . . . . . . . c d . . . . . . . 
     . . . . . . . c d . . . . . . . 
@@ -155,26 +179,8 @@ let emitterSprite = sprites.create(img`
     c c c c c c e e 2 2 2 4 2 2 e e 
     c c c c c c e e 2 2 2 2 4 2 e e 
     `, SpriteKind.Emitter)
-tiles.placeOnTile(emitterSprite, tiles.getTileLocation(6, 6))
+tiles.placeOnTile(emitterSprite, tiles.getTileLocation(7, 6))
 sprites.setDataString(emitterSprite, "colour", "red")
-sprites.setDataImage(emitterSprite, "particle", img`
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . 2 2 . . . . . . .
-    . . . . . . . 2 2 . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-`)
 emitterSprite = sprites.create(img`
     . . . . . . . c d . . . . . . . 
     . . . . . . . c d . . . . . . . 
@@ -195,24 +201,6 @@ emitterSprite = sprites.create(img`
     `, SpriteKind.Emitter)
 tiles.placeOnTile(emitterSprite, tiles.getTileLocation(2, 6))
 sprites.setDataString(emitterSprite, "colour", "blue")
-sprites.setDataImage(emitterSprite, "particle", img`
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . 8 8 . . . . . . .
-    . . . . . . . 8 8 . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-    . . . . . . . . . . . . . . . .
-`)
 let receiverSprite = sprites.create(img`
     . . . . . . . . . . . . . . . . 
     . . . . . . 4 4 4 4 . . . . . . 
@@ -233,7 +221,7 @@ let receiverSprite = sprites.create(img`
     `, SpriteKind.Receiver)
 tiles.placeOnTile(receiverSprite, tiles.getTileLocation(2, 2))
 sprites.setDataString(receiverSprite, "colour", "red")
-let receiverStatusSprite = statusbars.create(20, 4, StatusBarKind.Energy)
+let receiverStatusSprite = statusbars.create(16, 2, StatusBarKind.Energy)
 receiverStatusSprite.attachToSprite(receiverSprite)
 receiverStatusSprite.max = 5
 receiverStatusSprite.value = 0
@@ -255,13 +243,16 @@ receiverSprite = sprites.create(img`
     . . . . . . 6 6 6 6 . . . . . . 
     . . . . . . . . . . . . . . . . 
     `, SpriteKind.Receiver)
-tiles.placeOnTile(receiverSprite, tiles.getTileLocation(6, 2))
+tiles.placeOnTile(receiverSprite, tiles.getTileLocation(7, 2))
 sprites.setDataString(receiverSprite, "colour", "blue")
-receiverStatusSprite = statusbars.create(20, 4, StatusBarKind.Energy)
+receiverStatusSprite = statusbars.create(16, 2, StatusBarKind.Energy)
 receiverStatusSprite.attachToSprite(receiverSprite)
 receiverStatusSprite.max = 5
 receiverStatusSprite.value = 0
 prepareCursor()
+game.onUpdate(function () {
+    cursorBoxSprite.setPosition(cursorSprite.x, cursorSprite.y)
+})
 game.onUpdateInterval(1000, function () {
     allFull = true
     energybars = statusbars.allOfKind(StatusBarKind.Energy)
@@ -278,7 +269,63 @@ game.onUpdateInterval(1000, function () {
 game.onUpdateInterval(500, function () {
     emitters = sprites.allOfKind(SpriteKind.Emitter)
     for (let 值 of emitters) {
-        projectile = sprites.createProjectileFromSprite(sprites.readDataImage(值, "particle"), 值, 0, -50)
+        projectile = sprites.createProjectileFromSprite(img`
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            `, 值, 0, -50)
         sprites.setDataString(projectile, "colour", sprites.readDataString(值, "colour"))
+        if (sprites.readDataString(值, "colour") == "red") {
+            projectile.setImage(img`
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . 2 2 . . . . . . . 
+                . . . . . . . 2 2 . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                `)
+        } else {
+            projectile.setImage(img`
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . 8 8 . . . . . . . 
+                . . . . . . . 8 8 . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                `)
+        }
     }
 })
